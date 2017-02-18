@@ -1,6 +1,6 @@
 /*
  * CS352 Spring 2015
- * lexer.l: Lexacal analyzer for miniscript interpreter
+ * Lexical analyzer for miniscript interpreter
  * Andrew F. Davis
  */
 

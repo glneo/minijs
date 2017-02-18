@@ -1,6 +1,6 @@
 /*
  * CS352 Spring 2015
- * parser.y: Parser for miniscript interpreter
+ * Parser for miniscript interpreter
  * Andrew F. Davis
  */
 

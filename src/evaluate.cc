@@ -6,7 +6,6 @@
 
 #include "runtime.hh"
 
-#include <cstdio>
 #include <map>
 #include <string>
 #include <sstream>
@@ -18,9 +17,6 @@ using namespace std;
 
 void Operation::evaluate(ContextPtr context, bool &errorReported)
 {
-	// assume we will be undefined
-	symbol.type = Symbol::UNDEFINED;
-
 	// evaluate both sides of our operation
 	left->evaluate(context, errorReported);
 
@@ -42,15 +38,7 @@ void Operation::evaluate(ContextPtr context, bool &errorReported)
 	// changing its value before we extract it in its current
 	// incarnation, so we save (left)'s value here before we call (right)
 	shared_ptr<Constant> newLeft(new Constant(0));
-	newLeft->symbol.type = left->symbol.type;
-	newLeft->symbol.int_value = left->symbol.int_value;
-	newLeft->symbol.string_value = left->symbol.string_value;
-	newLeft->symbol.bool_value = left->symbol.bool_value;
-	newLeft->symbol.object = left->symbol.object;
-	newLeft->symbol.array = left->symbol.array;
-	newLeft->symbol.function = left->symbol.function;
-	newLeft->symbol.declared = left->symbol.declared;
-	newLeft->symbol.assigned = left->symbol.assigned;
+	newLeft->symbol = left->symbol;
 
 	right->evaluate(context, errorReported);
 
@@ -70,7 +58,7 @@ void Operation::evaluate(ContextPtr context, bool &errorReported)
 			right->symbol.type == Symbol::INTEGER ||
 			right->symbol.type == Symbol::BOOLEAN))
 		{
-			bool leftTruth = getTruth(newLeft, errorReported);
+			bool leftTruth = getTruth(newLeft.get(), errorReported);
 			bool rightTruth = getTruth(right, errorReported);
 			switch (opType)
 			{
@@ -230,7 +218,6 @@ void Negate::evaluate(ContextPtr context, bool &errorReported)
 	{
 		// print an error message if not
 		MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-		symbol.type = Symbol::UNDEFINED;
 		return;
 	}
 	// do the negation
@@ -252,7 +239,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		{
 			// use before being declared is a value error
 			MS_ERROR::report(errorReported, MS_ERROR::VALUE, lineNumber, name);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -261,7 +247,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 	{
 		// print an error message if not
 		MS_ERROR::report(errorReported, MS_ERROR::VALUE, lineNumber, name);
-		symbol.type = Symbol::UNDEFINED;
 		return;
 	}
 
@@ -273,7 +258,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		if (object_name.empty())
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -288,7 +272,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 			// it's a type violation to use a non
 			// object type like an object
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 		// if it is we get our symbol information
@@ -300,7 +283,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		{
 			// use before being declared is a value error
 			MS_ERROR::report(errorReported, MS_ERROR::VALUE, lineNumber, name + "." + object_name);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 		// now we check if it has been previously assigned
@@ -308,7 +290,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		{
 			// print an error message if not
 			MS_ERROR::report(errorReported, MS_ERROR::VALUE, lineNumber, name + "." + object_name);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -318,7 +299,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		if (tableSymbol->type == Symbol::OBJECT)
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -334,7 +314,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		if (index->symbol.type != Symbol::INTEGER)
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 
@@ -344,7 +323,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 			// it's a type violation to use a non
 			// array like type like an array
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 		// if we are out of bounds we resize
@@ -363,7 +341,6 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 			// print an error message if not
 			MS_ERROR::report(errorReported, MS_ERROR::VALUE, lineNumber, name + "[" +
 				static_cast<ostringstream*>(&(ostringstream() << (index->symbol.int_value)))->str() +"]");
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -373,18 +350,12 @@ void Variable::evaluate(ContextPtr context, bool &errorReported)
 		if (tableSymbol->type == Symbol::ARRAY)
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
 
 	// copy from the symbol table
-	symbol.type = tableSymbol->type;
-	symbol.int_value = tableSymbol->int_value;
-	symbol.string_value = tableSymbol->string_value;
-	symbol.bool_value = tableSymbol->bool_value;
-	symbol.object = tableSymbol->object;
-	symbol.array = tableSymbol->array;
+	symbol = *tableSymbol;
 }
 
 void Variable::declare(ContextPtr context, bool &errorReported)
@@ -422,7 +393,6 @@ void Variable::assign(ContextPtr context, Expression* expression, bool &errorRep
 			// it's a type violation to use a non
 			// object like type like an object
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 		// if it is we get our symbol information
@@ -441,7 +411,6 @@ void Variable::assign(ContextPtr context, Expression* expression, bool &errorRep
 		if (tableSymbol->type == Symbol::OBJECT)
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -455,7 +424,6 @@ void Variable::assign(ContextPtr context, Expression* expression, bool &errorRep
 		if (index->symbol.type != Symbol::INTEGER)
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 		// if we are out of bounds we resize
@@ -474,18 +442,16 @@ void Variable::assign(ContextPtr context, Expression* expression, bool &errorRep
 		if (tableSymbol->type == Symbol::ARRAY)
 		{
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
 
+	// save old declared
+	bool declaredTemp = tableSymbol->declared;
 	// do the actual assignment
-	tableSymbol->type = expression->symbol.type;
-	tableSymbol->int_value = expression->symbol.int_value;
-	tableSymbol->string_value = expression->symbol.string_value;
-	tableSymbol->bool_value = expression->symbol.bool_value;
-	tableSymbol->object = expression->symbol.object;
-	tableSymbol->array = expression->symbol.array;
+	*tableSymbol = expression->symbol;
+	// restore old declared
+	tableSymbol->declared = declaredTemp;
 	// mark the variable as having been assigned
 	tableSymbol->assigned = true;
 }
@@ -504,7 +470,6 @@ void Callable::evaluate(ContextPtr context, bool &errorReported)
 		{
 			// use before being declared is a type violation
 			MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-			symbol.type = Symbol::UNDEFINED;
 			return;
 		}
 	}
@@ -514,7 +479,6 @@ void Callable::evaluate(ContextPtr context, bool &errorReported)
 	{
 		// it's a type violation to call a variable
 		MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-		symbol.type = Symbol::UNDEFINED;
 		return;
 	}
 
@@ -522,7 +486,6 @@ void Callable::evaluate(ContextPtr context, bool &errorReported)
 	if (parameters->size() != (tableSymbol->function)->getNumberOfArgs())
 	{
 		MS_ERROR::report(errorReported, MS_ERROR::TYPE, lineNumber);
-		symbol.type = Symbol::UNDEFINED;
 		return;
 	}
 
@@ -541,16 +504,9 @@ void Callable::evaluate(ContextPtr context, bool &errorReported)
 	catch (Expression* ret)
 	{
 		// copy from the return value
-		symbol.type = (ret->symbol).type;
-		symbol.int_value = (ret->symbol).int_value;
-		symbol.string_value = (ret->symbol).string_value;
-		symbol.bool_value = (ret->symbol).bool_value;
-		symbol.object = (ret->symbol).object;
-		symbol.array = (ret->symbol).array;
-		symbol.function = (ret->symbol).function; // http://i.imgur.com/eAjDV5C.jpg
+		symbol = (ret->symbol); // http://i.imgur.com/eAjDV5C.jpg
 		return;
 	}
 
 	// if we get this far then the function returned without a return statement
-	symbol.type = Symbol::UNDEFINED;
 }

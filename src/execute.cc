@@ -92,10 +92,7 @@ void Declaration::execute(ContextPtr context)
 			(*it)->evaluate(context, errorReported);
 			shared_ptr<Symbol> localSymbol(new Symbol());
 			// assignment
-			localSymbol->type = (*it)->symbol.type;
-			localSymbol->int_value = (*it)->symbol.int_value;
-			localSymbol->string_value = (*it)->symbol.string_value;
-			localSymbol->bool_value = (*it)->symbol.bool_value;
+			*localSymbol = (*it)->symbol;
 			localSymbol->assigned = true;
 			getTableSymbol(context, dynamic_cast<Variable*>(variable)->name)->array.push_back(localSymbol);
 		}
@@ -114,33 +111,6 @@ void Assignment::execute(ContextPtr context)
 
 // Assumes condition has been evaluated first
 bool getTruth(Expression* condition, bool &errorReported)
-{
-	//we get the result based on type
-	bool truth;
-	switch (condition->symbol.type)
-	{
-	case Symbol::BOOLEAN:
-		truth = condition->symbol.bool_value;
-		break;
-	case Symbol::INTEGER:
-		// true is a non-zero integer like C
-		// so we could just cast to bool but
-		// I feel pedantic today :)
-		truth = (condition->symbol.int_value != 0);
-		break;
-	case Symbol::STRING:
-		// true is a non-empty string
-		truth = (condition->symbol.string_value != "");
-		break;
-	default:
-		// all other types are a violation
-		MS_ERROR::report(errorReported, MS_ERROR::CONDITION, condition->lineNumber);
-		throw new exception; // don't evaluate further
-	}
-	return truth;
-}
-
-bool getTruth(shared_ptr<Expression> condition, bool &errorReported)
 {
 	//we get the result based on type
 	bool truth;
@@ -235,13 +205,7 @@ void Function::execute(ContextPtr context)
 		//FIXME: do we pass by reference or value?
 		// assume by value, so make a new symbol and fill it
 		shared_ptr<Symbol> newSymbol(new Symbol());
-		newSymbol->type = (callStack.top()->symbol).type;
-		newSymbol->int_value = (callStack.top()->symbol).int_value;
-		newSymbol->string_value = (callStack.top()->symbol).string_value;
-		newSymbol->bool_value = (callStack.top()->symbol).bool_value;
-		newSymbol->object = (callStack.top()->symbol).object;
-		newSymbol->array = (callStack.top()->symbol).array;
-		newSymbol->function = (callStack.top()->symbol).function;
+		*newSymbol = callStack.top()->symbol;
 		newSymbol->declared = true;
 		newSymbol->assigned = true;
 		(*localContext)[(*it)] = newSymbol;

@@ -20,11 +20,6 @@ ContextPtr globalContext = make_shared<map<string, shared_ptr<Symbol>>>();
 /* Used for passing arguments to functions */
 stack<Expression*> callStack;
 
-void MS_ERROR::report(bool &errorReported, ERROR_TYPE type, int lineNumber)
-{
-	report(errorReported, type, lineNumber, "");
-}
-
 void MS_ERROR::report(bool &errorReported, ERROR_TYPE type, int lineNumber, std::string varName)
 {
 	// if we haven't reported an error before

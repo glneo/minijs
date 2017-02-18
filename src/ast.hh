@@ -12,7 +12,6 @@
 #include <list>
 #include <vector>
 #include <memory>
-#include <iostream>
 
 class Symbol;
 class Function;

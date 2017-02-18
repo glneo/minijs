@@ -30,15 +30,13 @@ public:
 		UNDECLARED
 	};
 
-	static void report(bool &errorReported, ERROR_TYPE type, int lineNumber);
-	static void report(bool &errorReported, ERROR_TYPE type, int lineNumber, std::string varName);
+	static void report(bool &errorReported, ERROR_TYPE type, int lineNumber, std::string varName = "");
 };
 
 std::shared_ptr<Symbol> getTableSymbol(ContextPtr context, std::string name);
 
 // Assumes condition has been evaluated first
 bool getTruth(Expression* condition, bool &errorReported);
-bool getTruth(std::shared_ptr<Expression> condition, bool &errorReported);
 
 void runProgram(std::list<Statement*>* program);
 
