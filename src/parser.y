@@ -192,8 +192,7 @@ multidiv_expression:
 
 negation_expression:
 		single_expression                                { $$ = $1; }
-		| NOT identifier                                 { $$ = new Negate($2, @1.first_line); }
-		| NOT '(' expression ')'                         { $$ = new Negate($3, @1.first_line); }
+		| NOT single_expression                          { $$ = new Negate($2, @1.first_line); }
 		;
 
 single_expression:
